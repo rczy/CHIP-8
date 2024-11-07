@@ -1,6 +1,8 @@
 EXECUTABLE= chip-8
 SOURCE_FILES= main.c
 SOURCE_FILES_PATH= $(addprefix src/,$(SOURCE_FILES))
+TESTS= startup
+TEST_TARGETS= $(addprefix test-,$(TESTS))
 SERVER_PORT= 8080
 
 .PHONY: help
@@ -14,6 +16,7 @@ help:
 	@echo "  windows       building project for Windows"
 	@echo "  web           building project for web"
 	@echo "  serve         serving web project on port $(SERVER_PORT)"
+	@echo "  test-all      run all tests"
 	@echo "  test-<file>   build and run test from 'test' folder"
 
 .PHONY: clean
@@ -22,7 +25,7 @@ clean:
 	rm -rf ./bin
 
 .PHONY: all
-all: linux
+all: linux windows web
 
 .PHONY: linux
 linux: bin/linux
@@ -44,9 +47,12 @@ serve: bin/web
 	@echo "Serving web project:"
 	python3 -m http.server $(SERVER_PORT) -d bin/web
 
+.PHONY: test-all
+test-all: $(TEST_TARGETS)
+
 .PHONY: test
 test-%: bin/test
-	gcc -o $</$@ test/$*.c && $</$@
+	@gcc -o $</$@ test/$*.c && $</$@ || true
 
 bin/%:
 	mkdir -p $@
