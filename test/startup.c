@@ -16,17 +16,17 @@ void test_create_destroy(void)
 void test_reset(void)
 {
     chip8_t *c8 = chip8_create();
-    int sum = 0;
+    chip8_reset(c8);
     TEST_CHECK(c8->I == 0);
-    TEST_CHECK(c8->OP == 0);
-    TEST_CHECK(c8->PC == 0);
+    TEST_CHECK(c8->PC == START_ADDRESS);
     TEST_CHECK(c8->SP == 0);
+    TEST_CHECK(c8->DT == 0);
+    TEST_CHECK(c8->ST == 0);
+    int sum = 0;
     for (int i = 0; i < 16; i++) {
         sum += c8->V[i];
     }
     TEST_CHECK(sum == 0);
-    TEST_CHECK(c8->DT == 0);
-    TEST_CHECK(c8->ST == 0);
     sum = 0;
     for (int i = 0; i < STACK_SIZE; i++) {
         sum += c8->S[i];

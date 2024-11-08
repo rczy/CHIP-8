@@ -1,7 +1,7 @@
 EXECUTABLE= chip-8
 SOURCE_FILES= main.c
 SOURCE_FILES_PATH= $(addprefix src/,$(SOURCE_FILES))
-TESTS= startup
+TESTS= startup fetch decode execute cycle
 TEST_TARGETS= $(addprefix test-,$(TESTS))
 SERVER_PORT= 8080
 
