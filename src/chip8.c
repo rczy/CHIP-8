@@ -92,6 +92,88 @@ exec_res_t chip8_execute(chip8_t *c8, instruction_t *inst)
             c8->PC = inst->NNN;
             break;
         }
+        case 0x3000: { // skip if VX == NN
+            if (c8->V[inst->X] == inst->NN) {
+                c8->PC += 2;
+            }
+            break;
+        }
+        case 0x4000: { // skip if VX != NN
+            if (c8->V[inst->X] != inst->NN) {
+                c8->PC += 2;
+            }
+            break;
+        }
+        case 0x5000: { // skip if VX == VY
+            if (inst->N != 0) return UNKNOWN_OPCODE;
+            if (c8->V[inst->X] == c8->V[inst->Y]) {
+                c8->PC += 2;
+            }
+            break;
+        }
+        case 0x6000: { // VX = NN
+            c8->V[inst->X] = inst->NN;
+            break;
+        }
+        case 0x7000: { // VX += NN
+            c8->V[inst->X] += inst->NN;
+            break;
+        }
+        case 0x8000: {
+            switch (inst->N) {
+                case 0: { // VX = VY
+                    c8->V[inst->X] = c8->V[inst->Y];
+                    break;
+                }
+                case 1: { // VX |= VY
+                    c8->V[inst->X] |= c8->V[inst->Y];
+                    break;
+                }
+                case 2: { // VX &= VY
+                    c8->V[inst->X] &= c8->V[inst->Y];
+                    break;
+                }
+                case 3: { // VX ^= VY
+                    c8->V[inst->X] ^= c8->V[inst->Y];
+                    break;
+                }
+                case 4: { // VX += VY
+                    int result = c8->V[inst->X] + c8->V[inst->Y];
+                    c8->V[inst->X] = result;
+                    c8->V[0xF] = result > 255;
+                    break;
+                }
+                case 5: { // VX -= VY
+                    c8->V[0xF] = c8->V[inst->X] > c8->V[inst->Y];
+                    c8->V[inst->X] -= c8->V[inst->Y];
+                    break;
+                }
+                case 6: { // VX = VY >> 1
+                    c8->V[0xF] = c8->V[inst->X] & 1;
+                    c8->V[inst->X] >>= 1;
+                    break;
+                }
+                case 7: { // VX = VY - VX
+                    c8->V[0xF] = c8->V[inst->Y] > c8->V[inst->X];
+                    c8->V[inst->X] = c8->V[inst->Y] - c8->V[inst->X];
+                    break;
+                }
+                case 0xE: { // VX = VY << 1
+                    c8->V[0xF] = c8->V[inst->X] >> 7;
+                    c8->V[inst->X] <<= 1;
+                    break;
+                }
+                default: return UNKNOWN_OPCODE;
+            }
+            break;
+        }
+        case 0x9000: { // skip if VX != VY
+            if (inst->N != 0) return UNKNOWN_OPCODE;
+            if (c8->V[inst->X] != c8->V[inst->Y]) {
+                c8->PC += 2;
+            }
+            break;
+        }
         default: return UNKNOWN_OPCODE;
     }
     if (c8->PC >= RAM_SIZE) {
