@@ -18,8 +18,10 @@ void chip8_reset(chip8_t *c8)
 {
     memset(c8->RAM, 0, sizeof(uint8_t) * RAM_SIZE);
     memset(c8->V, 0, sizeof(uint8_t) * 16);
-    memset(c8->S, 0, sizeof(uint16_t) * STACK_SIZE);
-    c8->I = c8->SP = 0;
+    memset(c8->STACK, 0, sizeof(uint16_t) * STACK_SIZE);
+    memset(c8->SCREEN, 0, sizeof(uint8_t) * SCREEN_WIDTH * SCREEN_HEIGHT);
+    memset(c8->KEYBOARD, 0, sizeof(uint8_t) * 16);
+    c8->I = c8->SP = c8->RF = 0;
     c8->DT = c8->ST = 0;
     c8->PC = START_ADDRESS;
 }
@@ -59,7 +61,42 @@ void chip8_decode(uint16_t opcode, instruction_t *inst)
 exec_res_t chip8_execute(chip8_t *c8, instruction_t *inst)
 {
     switch (inst->OP & 0xF000) {
+        case 0x0000: {
+            switch (inst->OP) {
+                case 0x0000: { // no operation
+                    break;
+                }
+                case 0x00E0: { // clear screen
+                    memset(c8->SCREEN, 0, sizeof(uint8_t) * SCREEN_WIDTH * SCREEN_HEIGHT);
+                    c8->RF = 1;
+                    break;
+                }
+                case 0x00EE: { // return from subroutine
+                    if (c8->SP == 0) return STACK_UNDERFLOW;
+                    c8->SP--;
+                    c8->PC = c8->STACK[c8->SP];
+                    break;
+                }
+                default: return UNKNOWN_OPCODE;
+            }
+            break;
+        }
+        case 0x1000: { // jump to address NNN
+            c8->PC = inst->NNN;
+            break;
+        }
+        case 0x2000: { // call subroutine
+            if (c8->SP == STACK_SIZE) return STACK_OVERFLOW;
+            c8->STACK[c8->SP] = c8->PC;
+            c8->SP++;
+            c8->PC = inst->NNN;
+            break;
+        }
         default: return UNKNOWN_OPCODE;
+    }
+    if (c8->PC >= RAM_SIZE) {
+        c8->PC = START_ADDRESS;
+        return PC_OVERFLOW;
     }
     return EXEC_SUCCESS;
 }
