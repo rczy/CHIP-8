@@ -2,6 +2,7 @@
 #define CHIP8_H
 
 #include <stdint.h>
+#include <stdio.h>
 
 #define RAM_SIZE 4096
 #define STACK_SIZE 16
@@ -47,10 +48,13 @@ typedef struct instruction_t {
 
 typedef enum exec_res_t { EXEC_SUCCESS, UNKNOWN_OPCODE, STACK_OVERFLOW, STACK_UNDERFLOW, PC_OVERFLOW } exec_res_t;
 
+typedef enum rom_ld_t { ROM_LOAD_SUCCESS, ROM_NOT_EXISTS, ROM_TOO_LARGE } rom_ld_t;
+
 chip8_t *chip8_create();
 void chip8_destroy(chip8_t **c8);
 void chip8_reset(chip8_t *c8);
 void chip8_ramcpy(chip8_t *c8, uint8_t *bytes, uint8_t size);
+rom_ld_t chip8_load_rom(chip8_t *c8, FILE *f);
 uint16_t chip8_fetch(chip8_t *c8);
 void chip8_decode(uint16_t opcode, instruction_t *inst);
 exec_res_t chip8_execute(chip8_t *c8, instruction_t *inst);

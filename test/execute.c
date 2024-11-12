@@ -5,21 +5,6 @@
 #include "../lib/acutest.h"
 #include "../src/chip8.c"
 
-void create_chip8_snapshot(chip8_t *c8_src, chip8_t *c8_dest)
-{
-    c8_dest->I = c8_src->I;
-    c8_dest->SP = c8_src->SP;
-    c8_dest->PC = c8_src->PC;
-    c8_dest->DT = c8_src->DT;
-    c8_dest->ST = c8_src->ST;
-    c8_dest->RF = c8_src->RF;
-    memcpy(c8_dest->RAM, c8_src->RAM, sizeof(uint8_t) * RAM_SIZE);
-    memcpy(c8_dest->V, c8_src->V, sizeof(uint8_t) * 16);
-    memcpy(c8_dest->STACK, c8_src->STACK, sizeof(uint16_t) * STACK_SIZE);
-    memcpy(c8_dest->SCREEN, c8_src->SCREEN, sizeof(uint8_t) * SCREEN_WIDTH * SCREEN_HEIGHT);
-    memcpy(c8_dest->KEYBOARD, c8_src->KEYBOARD, sizeof(uint8_t) * 16);
-}
-
 /**
  * PC overflow
  */
@@ -74,24 +59,41 @@ void test_0x0000(void)
     uint8_t data[] = { 0x00, 0x00 };
     instruction_t inst;
     exec_res_t result;
-    chip8_t *c8 = chip8_create(), c8_snapshot;
+    chip8_t *c8 = chip8_create();
     chip8_reset(c8);
     chip8_ramcpy(c8, data, 2);
-    create_chip8_snapshot(c8, &c8_snapshot);
     chip8_decode(chip8_fetch(c8), &inst);
     result = chip8_execute(c8, &inst);
     TEST_CHECK(result == EXEC_SUCCESS);
-    TEST_CHECK(c8->I == c8_snapshot.I);
-    TEST_CHECK(c8->SP == c8_snapshot.SP);
-    TEST_CHECK(c8->PC == c8_snapshot.PC + 2);
-    TEST_CHECK(c8->DT == c8_snapshot.DT);
-    TEST_CHECK(c8->ST == c8_snapshot.ST);
-    TEST_CHECK(c8->RF == c8_snapshot.RF);
-    TEST_CHECK(memcmp(c8->RAM, c8_snapshot.RAM, sizeof(uint8_t) * RAM_SIZE) == 0);
-    TEST_CHECK(memcmp(c8->V, c8_snapshot.V, sizeof(uint8_t) * 16) == 0);
-    TEST_CHECK(memcmp(c8->STACK, c8_snapshot.STACK, sizeof(uint16_t) * STACK_SIZE) == 0);
-    TEST_CHECK(memcmp(c8->SCREEN, c8_snapshot.SCREEN, sizeof(uint8_t) * SCREEN_WIDTH * SCREEN_HEIGHT) == 0);
-    TEST_CHECK(memcmp(c8->KEYBOARD, c8_snapshot.KEYBOARD, sizeof(uint8_t) * 16) == 0);
+    TEST_CHECK(c8->I == 0);
+    TEST_CHECK(c8->SP == 0);
+    TEST_CHECK(c8->PC == START_ADDRESS + 2);
+    TEST_CHECK(c8->DT == 0);
+    TEST_CHECK(c8->ST == 0);
+    TEST_CHECK(c8->RF == 0);
+    int sum = 0;
+    for (int i = 0; i < 16; i++) {
+        sum += c8->V[i];
+    }
+    TEST_CHECK(sum == 0);
+    for (int i = 0; i < STACK_SIZE; i++) {
+        sum += c8->STACK[i];
+    }
+    TEST_CHECK(sum == 0);
+    for (int i = 0; i < RAM_SIZE; i++) {
+        sum += c8->RAM[i];
+    }
+    TEST_CHECK(sum == 0);
+    for (int i = 0; i < SCREEN_WIDTH; i++) {
+        for (int j = 0; j < SCREEN_HEIGHT; j++) {
+            sum += c8->SCREEN[i][j];
+        }
+    }
+    TEST_CHECK(sum == 0);
+    for (int i = 0; i < 16; i++) {
+        sum += c8->KEYBOARD[i];
+    }
+    TEST_CHECK(sum == 0);
     chip8_destroy(&c8);
 }
 
@@ -103,19 +105,16 @@ void test_0x00E0(void)
     uint8_t data[] = { 0x00, 0xE0 };
     instruction_t inst;
     exec_res_t result;
-    chip8_t *c8 = chip8_create(), c8_snapshot;
+    chip8_t *c8 = chip8_create();
     chip8_reset(c8);
     chip8_ramcpy(c8, data, 2);
 
     memset(c8->SCREEN, 1, sizeof(uint8_t) * SCREEN_WIDTH * SCREEN_HEIGHT);
-    create_chip8_snapshot(c8, &c8_snapshot);
 
     chip8_decode(chip8_fetch(c8), &inst);
     result = chip8_execute(c8, &inst);
     TEST_CHECK(result == EXEC_SUCCESS);
-    // the following changed
     TEST_CHECK(c8->RF == 1);
-    TEST_CHECK(memcmp(c8->SCREEN, c8_snapshot.SCREEN, sizeof(uint8_t) * SCREEN_WIDTH * SCREEN_HEIGHT) < 0);
     int sum = 0;
     for (int i = 0; i < SCREEN_WIDTH; i++) {
         for (int j = 0; j < SCREEN_HEIGHT; j++) {
@@ -146,7 +145,6 @@ void test_0x00EE(void)
     chip8_decode(chip8_fetch(c8), &inst);
     result = chip8_execute(c8, &inst);
     TEST_CHECK(result == EXEC_SUCCESS);
-    // the following changed
     TEST_CHECK(c8->SP == 0);
     TEST_CHECK(c8->PC == c8->STACK[c8->SP]);
     TEST_CHECK(c8->PC == START_ADDRESS);
@@ -192,7 +190,6 @@ void test_0x1NNN(void)
     result = chip8_execute(c8, &inst);
     TEST_CHECK(result == EXEC_SUCCESS);
     TEST_CHECK(inst.NNN == 0x2C8);
-    // the following changed
     TEST_CHECK(c8->PC == 0x2C8);
     TEST_CHECK(chip8_fetch(c8) == 0xFFFF);
     chip8_destroy(&c8);
@@ -206,19 +203,17 @@ void test_0x2NNN(void)
     uint8_t data[] = { 0x21, 0xC8 };
     instruction_t inst;
     exec_res_t result;
-    chip8_t *c8 = chip8_create(), c8_snapshot;
+    chip8_t *c8 = chip8_create();
     chip8_reset(c8);
     chip8_ramcpy(c8, data, 2);
 
     TEST_CHECK(c8->SP == 0);
     TEST_CHECK(c8->STACK[c8->SP] != START_ADDRESS);
-    create_chip8_snapshot(c8, &c8_snapshot);
 
     chip8_decode(chip8_fetch(c8), &inst);
     result = chip8_execute(c8, &inst);
     TEST_CHECK(result == EXEC_SUCCESS);
-    // the following changed
-    TEST_CHECK(c8->SP == c8_snapshot.SP + 1);
+    TEST_CHECK(c8->SP == 1);
     TEST_CHECK(c8->STACK[c8->SP - 1] == START_ADDRESS + 2);
     TEST_CHECK(c8->PC == 0x1C8);
     chip8_destroy(&c8);
@@ -648,7 +643,7 @@ void test_0x8XY7(void)
     chip8_decode(chip8_fetch(c8), &inst);
     result = chip8_execute(c8, &inst);
     TEST_CHECK(result == EXEC_SUCCESS);
-    TEST_CHECK(c8->V[0xA] == 0x04); // 14 - 10 = -4, underflow
+    TEST_CHECK(c8->V[0xA] == 0x04); // 14 - 10 = 4
     TEST_CHECK(c8->V[0xB] == 0x0E); // unchanged
     TEST_CHECK(c8->V[0xF] == 1); // VY > VX ? 1 : 0
 
@@ -679,6 +674,208 @@ void test_0x8XYE(void)
     chip8_destroy(&c8);
 }
 
+/**
+ * I = NNN
+ */
+void test_0xANNN(void)
+{
+    uint8_t data[] = { 0xA1, 0x23 };
+    instruction_t inst;
+    exec_res_t result;
+    chip8_t *c8 = chip8_create();
+    chip8_reset(c8);
+    chip8_ramcpy(c8, data, 2);
+
+    chip8_decode(chip8_fetch(c8), &inst);
+    result = chip8_execute(c8, &inst);
+    TEST_CHECK(result == EXEC_SUCCESS);
+    TEST_CHECK(c8->I == inst.NNN);
+
+    chip8_destroy(&c8);
+}
+
+/**
+ * jump to address NNN + V0
+ */
+void test_0xBNNN(void)
+{
+    uint8_t data[] = { 0xB1, 0x23 };
+    instruction_t inst;
+    exec_res_t result;
+    chip8_t *c8 = chip8_create();
+    chip8_reset(c8);
+    chip8_ramcpy(c8, data, 2);
+
+    c8->V[0] = 0x12;
+
+    chip8_decode(chip8_fetch(c8), &inst);
+    result = chip8_execute(c8, &inst);
+    TEST_CHECK(result == EXEC_SUCCESS);
+    TEST_CHECK_(c8->PC == (0x123 + 0x12), "I: %X", c8->I);
+
+    chip8_destroy(&c8);
+}
+
+/**
+ * VX = random NN
+ */
+void test_0xCXNN(void)
+{
+    srand(time(NULL));
+    uint8_t data[] = { 0xCA, 0xC8, 0xCA, 0xC8 };
+    instruction_t inst;
+    exec_res_t result;
+    chip8_t *c8 = chip8_create();
+    chip8_reset(c8);
+    chip8_ramcpy(c8, data, 4);
+    TEST_CHECK(c8->V[0xA] == 0);
+    chip8_decode(chip8_fetch(c8), &inst);
+    result = chip8_execute(c8, &inst);
+    TEST_CHECK(result == EXEC_SUCCESS);
+    TEST_CHECK(c8->V[0xA] >= 0 && c8->V[0xA] <= 255);
+    chip8_decode(chip8_fetch(c8), &inst);
+    result = chip8_execute(c8, &inst);
+    TEST_CHECK(result == EXEC_SUCCESS);
+    TEST_CHECK(c8->V[0xA] >= 0 && c8->V[0xA] <= 255);
+    chip8_destroy(&c8);
+}
+
+/**
+ * draw to (0, 0)
+ */
+void test_0xDXYN_00(void)
+{
+    uint8_t data[] = { 0xDA, 0xB6, 0x20, 0x70, 0x70, 0xF8, 0xD8, 0x88 };
+    instruction_t inst;
+    exec_res_t result;
+    chip8_t *c8 = chip8_create();
+    chip8_reset(c8);
+    chip8_ramcpy(c8, data, 8);
+    c8->I = 0x202;
+    chip8_decode(chip8_fetch(c8), &inst);
+    result = chip8_execute(c8, &inst);
+    TEST_CHECK(result == EXEC_SUCCESS);
+    TEST_CHECK(c8->RF == 1);
+    TEST_CHECK(c8->V[0xF] == 0);
+    for (int row = 0; row < inst.N; row++) {
+        int pattern = 0;
+        for (int col = 0; col < 8; col++) {
+            pattern |= (c8->SCREEN[col][row] << (7 - col));
+        }
+        TEST_CHECK(pattern == c8->RAM[(START_ADDRESS + 2) + row]);
+    }
+    chip8_destroy(&c8);
+}
+
+/**
+ * draw to (X, Y) and erase
+ */
+void test_0xDXYN_XY_erase(void)
+{
+    uint8_t data[] = { 0xDA, 0xB6, 0x20, 0x70, 0x70, 0xF8, 0xD8, 0x88 };
+    instruction_t inst;
+    exec_res_t result;
+    chip8_t *c8 = chip8_create();
+    chip8_reset(c8);
+    chip8_ramcpy(c8, data, 8);
+    c8->I = 0x202;
+    c8->V[0xA] = 30;
+    c8->V[0xB] = 10;
+    chip8_decode(chip8_fetch(c8), &inst);
+    result = chip8_execute(c8, &inst);
+    TEST_CHECK(result == EXEC_SUCCESS);
+    TEST_CHECK(c8->RF == 1);
+    TEST_CHECK(c8->V[0xF] == 0);
+    int X = c8->V[0xA] % SCREEN_WIDTH;
+    int Y = c8->V[0xB] % SCREEN_HEIGHT;
+    for (int row = 0; row < inst.N && row + Y < SCREEN_HEIGHT; row++) {
+        int pattern = 0;
+        for (int col = 0; col < 8 && col + X < SCREEN_WIDTH; col++) {
+            pattern |= (c8->SCREEN[col + X][row + Y] << (7 - col));
+        }
+        uint8_t original_pattern = c8->RAM[(START_ADDRESS + 2) + row];
+        TEST_CHECK(pattern == original_pattern);
+    }
+    c8->PC = START_ADDRESS;
+    chip8_decode(chip8_fetch(c8), &inst);
+    result = chip8_execute(c8, &inst);
+    TEST_CHECK(result == EXEC_SUCCESS);
+    TEST_CHECK(c8->RF == 1);
+    TEST_CHECK(c8->V[0xF] == 1);
+    int sum = 0;
+    for (int i = 0; i < SCREEN_WIDTH; i++) {
+        for (int j = 0; j < SCREEN_HEIGHT; j++) {
+            sum += c8->SCREEN[i][j];
+        }
+    }
+    TEST_CHECK(sum == 0);
+    chip8_destroy(&c8);
+}
+
+/**
+ * collision detection
+ */
+void test_0xDXYN_collision_detection(void)
+{
+    uint8_t data[] = { 0xDA, 0xB6, 0x20, 0x70, 0x70, 0xF8, 0xD8, 0x88 };
+    instruction_t inst;
+    exec_res_t result;
+    chip8_t *c8 = chip8_create();
+    chip8_reset(c8);
+    chip8_ramcpy(c8, data, 8);
+    c8->I = 0x202;
+    c8->V[0xA] = 30;
+    c8->V[0xB] = 10;
+    chip8_decode(chip8_fetch(c8), &inst);
+    result = chip8_execute(c8, &inst);
+    TEST_CHECK(result == EXEC_SUCCESS);
+    TEST_CHECK(c8->RF == 1);
+    TEST_CHECK(c8->V[0xF] == 0);
+    c8->PC = START_ADDRESS;
+    c8->V[0xA] += 4;
+    chip8_decode(chip8_fetch(c8), &inst);
+    result = chip8_execute(c8, &inst);
+    TEST_CHECK(result == EXEC_SUCCESS);
+    TEST_CHECK(c8->RF == 1);
+    TEST_CHECK(c8->V[0xF] == 1);
+    chip8_destroy(&c8);
+}
+
+/**
+ * draw with wrap and clip
+ */
+void test_0xDXYN_wrap_and_clip(void)
+{
+    uint8_t data[] = { 0xDA, 0xB6, 0x20, 0x70, 0x70, 0xF8, 0xD8, 0x88 };
+    instruction_t inst;
+    exec_res_t result;
+    chip8_t *c8 = chip8_create();
+    chip8_reset(c8);
+    chip8_ramcpy(c8, data, 8);
+    c8->I = 0x202;
+    c8->V[0xA] = 125;
+    c8->V[0xB] = 91;
+    
+    chip8_decode(chip8_fetch(c8), &inst);
+    result = chip8_execute(c8, &inst);
+    TEST_CHECK(result == EXEC_SUCCESS);
+    TEST_CHECK(c8->RF == 1);
+    TEST_CHECK(c8->V[0xF] == 0);
+    int X = c8->V[0xA] % SCREEN_WIDTH;
+    int Y = c8->V[0xB] % SCREEN_HEIGHT;
+    for (int row = 0; row < inst.N && row + Y < SCREEN_HEIGHT; row++) {
+        uint8_t pattern = 0;
+        for (int col = 0; col < 8 && col + X < SCREEN_WIDTH; col++) {
+            pattern |= (c8->SCREEN[col + X][row + Y] << (7 - col));
+        }
+        uint8_t original_pattern = c8->RAM[(START_ADDRESS + 2) + row];
+        uint8_t mask = 0xFF << (8 + X - SCREEN_WIDTH);
+        original_pattern &= mask;
+        TEST_CHECK(pattern == original_pattern);
+    }
+    chip8_destroy(&c8);
+}
+
 TEST_LIST = {
     { "PC overflow", test_PC_overflow },
     { "unknown opcode", test_unknown_opcode },
@@ -705,5 +902,12 @@ TEST_LIST = {
     { "0x8XY7 - VX = VY - VX", test_0x8XY7 },
     { "0x8XYE - VX = VY << 1", test_0x8XYE },
     { "0x9XY0 - skip if VX != VY", test_0x9XY0 },
+    { "0xANNN - I = NNN", test_0xANNN },
+    { "0xBNNN - jump to address NNN + V0", test_0xBNNN },
+    { "0xCXNN - VX = random NN", test_0xCXNN },
+    { "0xDXYN - draw to (0, 0)", test_0xDXYN_00 },
+    { "0xDXYN - draw to (X, Y) and erase", test_0xDXYN_XY_erase },
+    { "0xDXYN - collision detection", test_0xDXYN_collision_detection },
+    { "0xDXYN - draw with wrap and clip", test_0xDXYN_wrap_and_clip },
     { NULL, NULL }
 };

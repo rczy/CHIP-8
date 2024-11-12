@@ -1,5 +1,5 @@
 EXECUTABLE= chip-8
-SOURCE_FILES= main.c
+SOURCE_FILES= chip8.c main.c
 SOURCE_FILES_PATH= $(addprefix src/,$(SOURCE_FILES))
 TESTS= setup fetch decode execute cycle
 TEST_TARGETS= $(addprefix test-,$(TESTS))
@@ -30,12 +30,13 @@ all: linux windows web
 .PHONY: linux
 linux: bin/linux
 	@echo "Building for Linux:"
-	gcc -o $</$(EXECUTABLE) $(SOURCE_FILES_PATH)
+	gcc -o $</$(EXECUTABLE) $(SOURCE_FILES_PATH) `pkg-config --cflags --libs sdl2`
 
 .PHONY: windows
 windows: bin/windows
 	@echo "Building for Windows:"
-	x86_64-w64-mingw32-gcc -o $</$(EXECUTABLE) $(SOURCE_FILES_PATH)
+	x86_64-w64-mingw32-gcc -o $</$(EXECUTABLE) $(SOURCE_FILES_PATH) -lmingw32 -lSDL2main `pkg-config --cflags --libs sdl2`
+	cp lib/SDL2.dll $< 2>/dev/null || :
 
 .PHONY: web
 web: bin/web
@@ -52,7 +53,9 @@ test-all: $(TEST_TARGETS)
 
 .PHONY: test
 test-%: bin/test
+	@echo "Running $* test:"
 	@gcc -o $</$@ test/$*.c && $</$@ || true
+	@echo ""
 
 bin/%:
 	mkdir -p $@

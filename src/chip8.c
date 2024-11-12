@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -29,6 +30,21 @@ void chip8_reset(chip8_t *c8)
 void chip8_ramcpy(chip8_t *c8, uint8_t *bytes, uint8_t size)
 {
     memcpy(&c8->RAM[START_ADDRESS], bytes, sizeof(uint8_t) * size);
+}
+
+rom_ld_t chip8_load_rom(chip8_t *c8, FILE *rom)
+{
+    if (rom == NULL) {
+        return ROM_NOT_EXISTS;
+    }
+    fseek(rom, 0, SEEK_END);
+    size_t bytes = ftell(rom);
+    rewind(rom);
+    if (bytes > RAM_SIZE - START_ADDRESS) {
+        return ROM_TOO_LARGE;
+    }
+    fread(&c8->RAM[START_ADDRESS], sizeof(uint8_t), bytes, rom);
+    return ROM_LOAD_SUCCESS;
 }
 
 exec_res_t chip8_cycle(chip8_t *c8)
@@ -172,6 +188,35 @@ exec_res_t chip8_execute(chip8_t *c8, instruction_t *inst)
             if (c8->V[inst->X] != c8->V[inst->Y]) {
                 c8->PC += 2;
             }
+            break;
+        }
+        case 0xA000: { // I = NNN
+            c8->I = inst->NNN;
+            break;
+        }
+        case 0xB000: { // jump to address NNN + V0
+            c8->PC = inst->NNN + c8->V[0];
+            break;
+        }
+        case 0xC000: { // VX = random NN
+            c8->V[inst->X] = (rand() % 256) & inst->NN;
+            break;
+        }
+        case 0xD000: { // draw
+            c8->V[0xF] = 0;
+            uint8_t X = c8->V[inst->X] % SCREEN_WIDTH;
+            uint8_t Y = c8->V[inst->Y] % SCREEN_HEIGHT;
+            for (int py = 0; py < inst->N && py + Y < SCREEN_HEIGHT; py++) {
+                uint8_t pattern = c8->RAM[c8->I + py];
+                for (int px = 0; px <= 7 && px + X < SCREEN_WIDTH; px++) {
+                    uint8_t pixel = (pattern >> (7 - px)) & 1;
+                    if (pixel) {
+                        c8->V[0xF] |= c8->SCREEN[px + X][py + Y];
+                        c8->SCREEN[px + X][py + Y] ^= pixel;
+                    }
+                }
+            }
+            c8->RF = 1;
             break;
         }
         default: return UNKNOWN_OPCODE;

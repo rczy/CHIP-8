@@ -62,9 +62,32 @@ void test_ramcpy(void)
     chip8_destroy(&c8);
 }
 
+void test_load_rom(void)
+{
+    chip8_t *c8 = chip8_create();
+    chip8_reset(c8);
+
+    FILE *no_rom = NULL;
+    TEST_CHECK(chip8_load_rom(c8, no_rom) == ROM_NOT_EXISTS);
+
+    FILE *large_rom = fopen("bin/test/large_rom.ch8", "wb+");
+    uint8_t large_data[RAM_SIZE] = { 0 };
+    fwrite(large_data, sizeof(uint8_t), RAM_SIZE, large_rom);
+    TEST_CHECK(chip8_load_rom(c8, large_rom) == ROM_TOO_LARGE);
+    fclose(large_rom);
+
+    FILE *rom = fopen("bin/test/rom.ch8", "wb+");
+    uint8_t data[] = { 0x43, 0x48, 0x49, 0x50, 0x2D, 0x38 };
+    fwrite(data, sizeof(uint8_t), 6, rom);
+    TEST_CHECK(chip8_load_rom(c8, rom) == ROM_LOAD_SUCCESS);
+    fclose(rom);
+    TEST_CHECK(memcmp(&c8->RAM[START_ADDRESS], data, 6) == 0);
+}
+
 TEST_LIST = {
     { "create and destroy",  test_create_destroy},
     { "reset",  test_reset},
     { "copy bytes to RAM",  test_ramcpy},
+    { "load ROM file into RAM",  test_load_rom},
     { NULL, NULL }
 };
