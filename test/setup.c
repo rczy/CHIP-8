@@ -82,6 +82,7 @@ void test_load_rom(void)
     TEST_CHECK(chip8_load_rom(c8, rom) == ROM_LOAD_SUCCESS);
     fclose(rom);
     TEST_CHECK(memcmp(&c8->RAM[START_ADDRESS], data, 6) == 0);
+    chip8_destroy(&c8);
 }
 
 TEST_LIST = {

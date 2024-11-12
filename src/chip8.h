@@ -12,6 +12,9 @@
 #define SCREEN_WIDTH 64
 #define SCREEN_HEIGHT 32
 
+#define FONTSET_ADDRESS 0x100
+#define FONT_OFFSET 5
+
 typedef struct chip8_t {
     // RAM
     uint8_t RAM[RAM_SIZE];
@@ -59,5 +62,6 @@ uint16_t chip8_fetch(chip8_t *c8);
 void chip8_decode(uint16_t opcode, instruction_t *inst);
 exec_res_t chip8_execute(chip8_t *c8, instruction_t *inst);
 exec_res_t chip8_cycle(chip8_t *c8);
+void chip8_tick(chip8_t *c8);
 
 #endif

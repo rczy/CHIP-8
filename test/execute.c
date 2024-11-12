@@ -80,7 +80,7 @@ void test_0x0000(void)
         sum += c8->STACK[i];
     }
     TEST_CHECK(sum == 0);
-    for (int i = 0; i < RAM_SIZE; i++) {
+    for (int i = START_ADDRESS; i < RAM_SIZE; i++) {
         sum += c8->RAM[i];
     }
     TEST_CHECK(sum == 0);
@@ -876,6 +876,281 @@ void test_0xDXYN_wrap_and_clip(void)
     chip8_destroy(&c8);
 }
 
+/**
+ * skip if VX key pressed
+ */
+void test_0xEX9E(void)
+{
+    uint8_t data[] = { 0xEA, 0x9E, 0x12, 0x34, 0x56, 0x78 };
+    instruction_t inst;
+    exec_res_t result;
+    chip8_t *c8 = chip8_create();
+    chip8_reset(c8);
+    chip8_ramcpy(c8, data, 6);
+
+    // no skip
+    chip8_decode(chip8_fetch(c8), &inst);
+    result = chip8_execute(c8, &inst);
+    TEST_CHECK(result == EXEC_SUCCESS);
+    TEST_CHECK(chip8_fetch(c8) == 0x1234);
+
+    // skip
+    c8->PC = START_ADDRESS;
+    c8->V[0xA] = 0xD;
+    c8->KEYBOARD[0xD] = 1;
+    chip8_decode(chip8_fetch(c8), &inst);
+    result = chip8_execute(c8, &inst);
+    TEST_CHECK(result == EXEC_SUCCESS);
+    TEST_CHECK(chip8_fetch(c8) == 0x5678);
+
+    chip8_destroy(&c8);
+}
+
+/**
+ * skip if VX key not pressed
+ */
+void test_0xEXA1(void)
+{
+    uint8_t data[] = { 0xEF, 0xA1, 0x12, 0x34, 0x56, 0x78 };
+    instruction_t inst;
+    exec_res_t result;
+    chip8_t *c8 = chip8_create();
+    chip8_reset(c8);
+    chip8_ramcpy(c8, data, 6);
+
+    // skip
+    chip8_decode(chip8_fetch(c8), &inst);
+    result = chip8_execute(c8, &inst);
+    TEST_CHECK(result == EXEC_SUCCESS);
+    TEST_CHECK(chip8_fetch(c8) == 0x5678);
+
+    // no skip
+    c8->PC = START_ADDRESS;
+    c8->V[0xF] = 0xB;
+    c8->KEYBOARD[0xB] = 1;
+    chip8_decode(chip8_fetch(c8), &inst);
+    result = chip8_execute(c8, &inst);
+    TEST_CHECK(result == EXEC_SUCCESS);
+    TEST_CHECK(chip8_fetch(c8) == 0x1234);
+
+    chip8_destroy(&c8);
+}
+
+/**
+ * VX = DT
+ */
+void test_0xFX07(void)
+{
+    uint8_t data[] = { 0xF8, 0x07 };
+    instruction_t inst;
+    exec_res_t result;
+    chip8_t *c8 = chip8_create();
+    chip8_reset(c8);
+    chip8_ramcpy(c8, data, 2);
+
+    c8->DT = 60;
+    chip8_decode(chip8_fetch(c8), &inst);
+    result = chip8_execute(c8, &inst);
+    TEST_CHECK(result == EXEC_SUCCESS);
+    TEST_CHECK(c8->V[8] == 60);
+
+    chip8_destroy(&c8);
+}
+
+/**
+ * wait, set VX = key
+ */
+void test_0xFX0A(void)
+{
+    uint8_t data[] = { 0xF2, 0x0A, 0x12, 0x34 };
+    instruction_t inst;
+    exec_res_t result;
+    chip8_t *c8 = chip8_create();
+    chip8_reset(c8);
+    chip8_ramcpy(c8, data, 4);
+
+    // cycle 1
+    chip8_decode(chip8_fetch(c8), &inst);
+    result = chip8_execute(c8, &inst);
+    TEST_CHECK(result == EXEC_SUCCESS);
+    TEST_CHECK(c8->V[2] == 0);
+    TEST_CHECK(c8->PC = START_ADDRESS);
+
+    // cycle 2
+    chip8_decode(chip8_fetch(c8), &inst);
+    result = chip8_execute(c8, &inst);
+    TEST_CHECK(result == EXEC_SUCCESS);
+    TEST_CHECK(c8->V[2] == 0);
+    TEST_CHECK(c8->PC = START_ADDRESS);
+
+    // cycle 3
+    c8->KEYBOARD[0xC] = 1;
+    chip8_decode(chip8_fetch(c8), &inst);
+    result = chip8_execute(c8, &inst);
+    TEST_CHECK(result == EXEC_SUCCESS);
+    TEST_CHECK(c8->V[2] == 0xC);
+    TEST_CHECK(c8->PC = START_ADDRESS + 2);
+
+    chip8_destroy(&c8);
+}
+
+/**
+ * DT = VX
+ */
+void test_0xFX15(void)
+{
+    uint8_t data[] = { 0xF4, 0x15 };
+    instruction_t inst;
+    exec_res_t result;
+    chip8_t *c8 = chip8_create();
+    chip8_reset(c8);
+    chip8_ramcpy(c8, data, 2);
+
+    c8->V[4] = 60;
+    chip8_decode(chip8_fetch(c8), &inst);
+    result = chip8_execute(c8, &inst);
+    TEST_CHECK(result == EXEC_SUCCESS);
+    TEST_CHECK(c8->DT == 60);
+
+    chip8_destroy(&c8);
+}
+
+/**
+ * ST = VX
+ */
+void test_0xFX18(void)
+{
+    uint8_t data[] = { 0xF9, 0x18 };
+    instruction_t inst;
+    exec_res_t result;
+    chip8_t *c8 = chip8_create();
+    chip8_reset(c8);
+    chip8_ramcpy(c8, data, 2);
+
+    c8->V[9] = 120;
+    chip8_decode(chip8_fetch(c8), &inst);
+    result = chip8_execute(c8, &inst);
+    TEST_CHECK(result == EXEC_SUCCESS);
+    TEST_CHECK(c8->ST == 120);
+
+    chip8_destroy(&c8);
+}
+
+/**
+ * I += VX
+ */
+void test_0xFX1E(void)
+{
+    uint8_t data[] = { 0xF1, 0x1E };
+    instruction_t inst;
+    exec_res_t result;
+    chip8_t *c8 = chip8_create();
+    chip8_reset(c8);
+    chip8_ramcpy(c8, data, 2);
+
+    c8->I = 0xC8;
+    c8->V[1] = 42;
+    chip8_decode(chip8_fetch(c8), &inst);
+    result = chip8_execute(c8, &inst);
+    TEST_CHECK(result == EXEC_SUCCESS);
+    TEST_CHECK(c8->I == 0xC8 + 42);
+
+    chip8_destroy(&c8);
+}
+
+/**
+ * set I to the HEX char at VX
+ */
+void test_0xFX29(void)
+{
+    uint8_t data[] = { 0xF8, 0x29 };
+    instruction_t inst;
+    exec_res_t result;
+    chip8_t *c8 = chip8_create();
+    chip8_reset(c8);
+    chip8_ramcpy(c8, data, 2);
+    c8->V[8] = 0xC;
+    chip8_decode(chip8_fetch(c8), &inst);
+    result = chip8_execute(c8, &inst);
+    TEST_CHECK(result == EXEC_SUCCESS);
+    TEST_CHECK_(c8->I == (FONTSET_ADDRESS + 0xC * FONT_OFFSET), "%d", c8->I);
+
+    chip8_destroy(&c8);
+}
+
+/**
+ * VX BCD
+ */
+void test_0xFX33(void)
+{
+    uint8_t data[] = { 0xF2, 0x33 };
+    instruction_t inst;
+    exec_res_t result;
+    chip8_t *c8 = chip8_create();
+    chip8_reset(c8);
+    chip8_ramcpy(c8, data, 2);
+
+    c8->I = 0x300;
+    c8->V[2] = 142;
+    chip8_decode(chip8_fetch(c8), &inst);
+    result = chip8_execute(c8, &inst);
+    TEST_CHECK(result == EXEC_SUCCESS);
+    TEST_CHECK(c8->RAM[0x300] == 1);
+    TEST_CHECK(c8->RAM[0x301] == 4);
+    TEST_CHECK(c8->RAM[0x302] == 2);
+
+    chip8_destroy(&c8);
+}
+
+/**
+ * store V0-VX
+ */
+void test_0xFX55(void)
+{
+    uint8_t data[] = { 0xF3, 0x55 };
+    instruction_t inst;
+    exec_res_t result;
+    chip8_t *c8 = chip8_create();
+    chip8_reset(c8);
+    chip8_ramcpy(c8, data, 2);
+
+    for (int i = 0; i <= 3; i++) {
+        c8->V[i] = i + 1;
+    }
+    c8->I = 0x400;
+    chip8_decode(chip8_fetch(c8), &inst);
+    result = chip8_execute(c8, &inst);
+    TEST_CHECK(result == EXEC_SUCCESS);
+    for (int i = 0; i <= 3; i++) {
+        TEST_CHECK(c8->RAM[0x400 + i] == i + 1);
+    }
+
+    chip8_destroy(&c8);
+}
+
+/**
+ * load V0-VX
+ */
+void test_0xFX65(void)
+{
+    uint8_t data[] = { 0xF3, 0x65, 1, 2, 3, 4 };
+    instruction_t inst;
+    exec_res_t result;
+    chip8_t *c8 = chip8_create();
+    chip8_reset(c8);
+    chip8_ramcpy(c8, data, 6);
+
+    c8->I = START_ADDRESS + 2;
+    chip8_decode(chip8_fetch(c8), &inst);
+    result = chip8_execute(c8, &inst);
+    TEST_CHECK(result == EXEC_SUCCESS);
+    for (int i = 0; i <= 3; i++) {
+        TEST_CHECK(c8->V[i] == i + 1);
+    }
+
+    chip8_destroy(&c8);
+}
+
 TEST_LIST = {
     { "PC overflow", test_PC_overflow },
     { "unknown opcode", test_unknown_opcode },
@@ -909,5 +1184,16 @@ TEST_LIST = {
     { "0xDXYN - draw to (X, Y) and erase", test_0xDXYN_XY_erase },
     { "0xDXYN - collision detection", test_0xDXYN_collision_detection },
     { "0xDXYN - draw with wrap and clip", test_0xDXYN_wrap_and_clip },
+    { "0xEX9E - skip if VX key pressed", test_0xEX9E },
+    { "0xEXA1 - skip if VX key not pressed", test_0xEXA1 },
+    { "0xFX07 - VX = DT", test_0xFX07 },
+    { "0xFX0A - wait, set VX = key", test_0xFX0A },
+    { "0xFX15 - DT = VX", test_0xFX15 },
+    { "0xFX18 - ST = VX", test_0xFX18 },
+    { "0xFX1E - I += VX", test_0xFX1E },
+    { "0xFX29 - set I to the HEX char at VX", test_0xFX29 },
+    { "0xFX33 - VX BCD", test_0xFX33 },
+    { "0xFX55 - store V0-VX", test_0xFX55 },
+    { "0xFX65 - load V0-VX", test_0xFX65 },
     { NULL, NULL }
 };

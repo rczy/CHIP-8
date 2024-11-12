@@ -4,6 +4,25 @@
 
 #include "chip8.h"
 
+uint8_t fontset[80] = {
+    0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
+    0x20, 0x60, 0x20, 0x20, 0x70, // 1
+    0xF0, 0x10, 0xF0, 0x80, 0xF0, // 2
+    0xF0, 0x10, 0xF0, 0x10, 0xF0, // 3
+    0x90, 0x90, 0xF0, 0x10, 0x10, // 4
+    0xF0, 0x80, 0xF0, 0x10, 0xF0, // 5
+    0xF0, 0x80, 0xF0, 0x90, 0xF0, // 6
+    0xF0, 0x10, 0x20, 0x40, 0x40, // 7
+    0xF0, 0x90, 0xF0, 0x90, 0xF0, // 8
+    0xF0, 0x90, 0xF0, 0x10, 0xF0, // 9
+    0xF0, 0x90, 0xF0, 0x90, 0x90, // A
+    0xE0, 0x90, 0xE0, 0x90, 0xE0, // B
+    0xF0, 0x80, 0x80, 0x80, 0xF0, // C
+    0xE0, 0x90, 0x90, 0x90, 0xE0, // D
+    0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
+    0xF0, 0x80, 0xF0, 0x80, 0x80, // F
+};
+
 chip8_t *chip8_create()
 {
     return malloc(sizeof(chip8_t));
@@ -22,6 +41,7 @@ void chip8_reset(chip8_t *c8)
     memset(c8->STACK, 0, sizeof(uint16_t) * STACK_SIZE);
     memset(c8->SCREEN, 0, sizeof(uint8_t) * SCREEN_WIDTH * SCREEN_HEIGHT);
     memset(c8->KEYBOARD, 0, sizeof(uint8_t) * 16);
+    memcpy(&c8->RAM[FONTSET_ADDRESS], fontset, sizeof(uint8_t) * FONT_OFFSET * 16);
     c8->I = c8->SP = c8->RF = 0;
     c8->DT = c8->ST = 0;
     c8->PC = START_ADDRESS;
@@ -219,6 +239,85 @@ exec_res_t chip8_execute(chip8_t *c8, instruction_t *inst)
             c8->RF = 1;
             break;
         }
+        case 0xE000: {
+            switch (inst->NN) {
+                case 0x9E: { // skip if VX key pressed
+                    if (c8->KEYBOARD[c8->V[inst->X]]) {
+                        c8->PC += 2;
+                    }
+                    break;
+                }
+                case 0xA1: { // skip if VX key not pressed
+                    if (!c8->KEYBOARD[c8->V[inst->X]]) {
+                        c8->PC += 2;
+                    }
+                    break;
+                }
+                default: return UNKNOWN_OPCODE;
+            }
+            break;
+        }
+        case 0xF000: {
+            switch (inst->NN) {
+                case 0x07: { // VX = DT
+                    c8->V[inst->X] = c8->DT;
+                    break;
+                }
+                case 0x0A: { // wait, set VX = key
+                    uint8_t keypress = 0;
+                    for (int i = 0; i < 16; i++) {
+                        if (c8->KEYBOARD[i] == 1) {
+                            c8->V[inst->X] = i;
+                            keypress = 1;
+                            break;
+                        }
+                    }
+                    if (!keypress) {
+                        c8->PC -= 2;
+                    }
+                    break;
+                }
+                case 0x15: { // DT = VX
+                    c8->DT = c8->V[inst->X];
+                    break;
+                }
+                case 0x18: { // ST = VX
+                    c8->ST = c8->V[inst->X];
+                    break;
+                }
+                case 0x1E: { // I += VX
+                    c8->I += c8->V[inst->X];
+                    break;
+                }
+                case 0x29: { // set I to the HEX char at VX
+                    c8->I = FONTSET_ADDRESS + c8->V[inst->X] * FONT_OFFSET;
+                    break;
+                }
+                case 0x33: { // VX BCD
+                    uint8_t num = c8->V[inst->X], mod;
+                    for (int i = 2; i >= 0; i--) {
+                        mod = num % 10;
+                        c8->RAM[c8->I + i] = mod;
+                        num = (num - mod) / 10;
+                    }
+                    break;
+                }
+                case 0x55: { // store V0-VX
+                    for (int i = 0; i <= inst->X; i++) {
+                        c8->RAM[c8->I + i] = c8->V[i];
+                    }
+                    break;
+                }
+                case 0x65: { // load V0-VX
+                    for (int i = 0; i <= inst->X; i++) {
+                        c8->V[i] = c8->RAM[c8->I + i];
+                    }
+                    break;
+                }
+                default: return UNKNOWN_OPCODE;
+            }
+            break;
+        }
         default: return UNKNOWN_OPCODE;
     }
     if (c8->PC >= RAM_SIZE) {
@@ -226,4 +325,10 @@ exec_res_t chip8_execute(chip8_t *c8, instruction_t *inst)
         return PC_OVERFLOW;
     }
     return EXEC_SUCCESS;
+}
+
+void chip8_tick(chip8_t *c8)
+{
+    if (c8->DT > 0) c8->DT--;
+    if (c8->ST > 0) c8->ST--;
 }
