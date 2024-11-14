@@ -603,7 +603,7 @@ void test_0x8XY6(void)
     chip8_reset(c8);
     chip8_ramcpy(c8, data, 2);
 
-    c8->V[0xA] = 0b00001111;
+    c8->V[0xB] = 0b00001111;
     TEST_CHECK(c8->V[0xF] == 0);
 
     chip8_decode(chip8_fetch(c8), &inst);
@@ -662,7 +662,7 @@ void test_0x8XYE(void)
     chip8_reset(c8);
     chip8_ramcpy(c8, data, 2);
 
-    c8->V[0xA] = 0b10001111;
+    c8->V[0xB] = 0b10001111;
     TEST_CHECK(c8->V[0xF] == 0);
 
     chip8_decode(chip8_fetch(c8), &inst);
@@ -1124,7 +1124,7 @@ void test_0xFX55(void)
     for (int i = 0; i <= 3; i++) {
         TEST_CHECK(c8->RAM[0x400 + i] == i + 1);
     }
-
+    TEST_CHECK(c8->I == 0x400 + 4);
     chip8_destroy(&c8);
 }
 
@@ -1147,7 +1147,7 @@ void test_0xFX65(void)
     for (int i = 0; i <= 3; i++) {
         TEST_CHECK(c8->V[i] == i + 1);
     }
-
+    TEST_CHECK(c8->I == START_ADDRESS + 6);
     chip8_destroy(&c8);
 }
 

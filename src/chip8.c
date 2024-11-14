@@ -163,14 +163,17 @@ exec_res_t chip8_execute(chip8_t *c8, instruction_t *inst)
                 }
                 case 1: { // VX |= VY
                     c8->V[inst->X] |= c8->V[inst->Y];
+                    c8->V[0xF] = 0;
                     break;
                 }
                 case 2: { // VX &= VY
                     c8->V[inst->X] &= c8->V[inst->Y];
+                    c8->V[0xF] = 0;
                     break;
                 }
                 case 3: { // VX ^= VY
                     c8->V[inst->X] ^= c8->V[inst->Y];
+                    c8->V[0xF] = 0;
                     break;
                 }
                 case 4: { // VX += VY
@@ -180,23 +183,27 @@ exec_res_t chip8_execute(chip8_t *c8, instruction_t *inst)
                     break;
                 }
                 case 5: { // VX -= VY
-                    c8->V[0xF] = c8->V[inst->X] > c8->V[inst->Y];
+                    uint8_t flag = c8->V[inst->X] >= c8->V[inst->Y];
                     c8->V[inst->X] -= c8->V[inst->Y];
+                    c8->V[0xF] = flag;
                     break;
                 }
                 case 6: { // VX = VY >> 1
-                    c8->V[0xF] = c8->V[inst->X] & 1;
-                    c8->V[inst->X] >>= 1;
+                    uint8_t bit = c8->V[inst->Y] & 1;
+                    c8->V[inst->X] = c8->V[inst->Y] >> 1;
+                    c8->V[0xF] = bit;
                     break;
                 }
                 case 7: { // VX = VY - VX
-                    c8->V[0xF] = c8->V[inst->Y] > c8->V[inst->X];
+                    uint8_t flag = c8->V[inst->Y] >= c8->V[inst->X];
                     c8->V[inst->X] = c8->V[inst->Y] - c8->V[inst->X];
+                    c8->V[0xF] = flag;
                     break;
                 }
                 case 0xE: { // VX = VY << 1
-                    c8->V[0xF] = c8->V[inst->X] >> 7;
-                    c8->V[inst->X] <<= 1;
+                    uint8_t bit = c8->V[inst->Y] >> 7;
+                    c8->V[inst->X] = c8->V[inst->Y] << 1;
+                    c8->V[0xF] = bit;
                     break;
                 }
                 default: return UNKNOWN_OPCODE;
@@ -304,13 +311,13 @@ exec_res_t chip8_execute(chip8_t *c8, instruction_t *inst)
                 }
                 case 0x55: { // store V0-VX
                     for (int i = 0; i <= inst->X; i++) {
-                        c8->RAM[c8->I + i] = c8->V[i];
+                        c8->RAM[c8->I++] = c8->V[i];
                     }
                     break;
                 }
                 case 0x65: { // load V0-VX
                     for (int i = 0; i <= inst->X; i++) {
-                        c8->V[i] = c8->RAM[c8->I + i];
+                        c8->V[i] = c8->RAM[c8->I++];
                     }
                     break;
                 }

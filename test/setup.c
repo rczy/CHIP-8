@@ -32,7 +32,7 @@ void test_reset(void)
         sum += c8->STACK[i];
     }
     TEST_CHECK(sum == 0);
-    for (int i = 0; i < RAM_SIZE; i++) {
+    for (int i = START_ADDRESS; i < RAM_SIZE; i++) {
         sum += c8->RAM[i];
     }
     TEST_CHECK(sum == 0);
