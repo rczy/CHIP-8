@@ -1,5 +1,5 @@
 EXECUTABLE= chip-8
-SOURCE_FILES= chip8.c main.c
+SOURCE_FILES= chip8.c input.c display.c device.c main.c
 SOURCE_FILES_PATH= $(addprefix src/,$(SOURCE_FILES))
 TESTS= setup fetch decode execute cycle
 TEST_TARGETS= $(addprefix test-,$(TESTS))
