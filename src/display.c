@@ -1,5 +1,5 @@
 #include <stdlib.h>
-#include "display.h"
+#include "include/display.h"
 
 display_t *display_create(char* title, int width, int height)
 {

@@ -1,9 +1,9 @@
 #include <SDL2/SDL.h>
-#include "device.h"
+#include "include/device.h"
 
 int main(int argc, char *argv[])
 {
-    if (argc < 2 || SDL_Init(SDL_INIT_VIDEO) < 0) {
+    if (argc < 2 || SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0) {
         return EXIT_FAILURE;
     }
 

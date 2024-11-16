@@ -3,6 +3,7 @@
 
 #include "chip8.h"
 #include "display.h"
+#include "beeper.h"
 
 #define DEFAULT_IPF 9
 
@@ -11,6 +12,8 @@ typedef struct device_t {
     chip8_t *chip_8;
     // display
     display_t *display;
+    // beeper
+    beeper_t *beeper;
     // ROM file path
     char *rom_path;
     // instructions per frame

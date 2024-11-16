@@ -1,5 +1,5 @@
 #include <SDL2/SDL.h>
-#include "input.h"
+#include "include/input.h"
 
 SDL_Keycode key_mapping[16] = {
     SDL_SCANCODE_X, // 0

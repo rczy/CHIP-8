@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "chip8.h"
+#include "include/chip8.h"
 
 uint8_t fontset[80] = {
     0xF0, 0x90, 0x90, 0x90, 0xF0, // 0

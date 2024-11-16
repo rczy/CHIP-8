@@ -2,10 +2,11 @@
 #include <stdio.h>
 #include <time.h>
 #include <SDL2/SDL.h>
-#include "device.h"
-#include "chip8.h"
-#include "input.h"
-#include "display.h"
+#include "include/device.h"
+#include "include/chip8.h"
+#include "include/input.h"
+#include "include/display.h"
+#include "include/beeper.h"
 
 device_t *device_init(char *rom_path, uint16_t ipf)
 {
@@ -13,6 +14,7 @@ device_t *device_init(char *rom_path, uint16_t ipf)
     device_t *device = malloc(sizeof(device_t));
     device->chip_8 = chip8_create();
     device->display = display_create("CHIP-8 emulator", SCREEN_WIDTH * 10, SCREEN_HEIGHT * 10);
+    device->beeper = beeper_create();
     device->rom_path = rom_path;
     device->ipf = ipf;
     device->t1 = device->t60 = SDL_GetTicks();
@@ -24,6 +26,7 @@ device_t *device_init(char *rom_path, uint16_t ipf)
 void device_destroy(device_t **device)
 {
     display_destroy(&(*device)->display);
+    beeper_destroy(&(*device)->beeper);
     chip8_destroy(&(*device)->chip_8);
     free(*device);
     *device = NULL;
@@ -62,6 +65,11 @@ void device_iterate(device_t *device)
         if (device->chip_8->RF) {
             display_render(device->display, (uint8_t *)device->chip_8->SCREEN, SCREEN_WIDTH, SCREEN_HEIGHT, 10);
             device->chip_8->RF = 0;
+        }
+        if (device->chip_8->ST) {
+            beeper_beep(device->beeper);
+        } else {
+            beeper_mute(device->beeper);
         }
 
         device->frames++;
