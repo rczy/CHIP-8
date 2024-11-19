@@ -3,11 +3,15 @@
 void beeper_callback(void *userdata, uint8_t * stream, int len);
 void beeper_buffer_init(beeper_t *beeper);
 
-beeper_t *beeper_create()
+beeper_t *beeper_create(uint16_t tone)
 {
+    if (tone == 0) {
+        tone = SAMPLE_FREQ;
+    }
+
     beeper_t *beeper = malloc(sizeof(beeper_t));
     beeper->state = MUTED;
-    beeper->period = SAMPLE_FREQ / TONE;
+    beeper->period = SAMPLE_FREQ / tone;
     beeper->half_period = beeper->period / 2;
     beeper->nth_chunk = 0;
 

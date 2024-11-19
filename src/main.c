@@ -1,4 +1,5 @@
 #include <SDL2/SDL.h>
+#include "include/args.h"
 #include "include/device.h"
 
 int main(int argc, char *argv[])
@@ -7,8 +8,8 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
-    uint16_t ipf = argc > 2 ? strtol(argv[2], NULL, 10) : DEFAULT_IPF;
-    device_t *device = device_init(argv[1], ipf);
+    args_t args = parse_args(argc, argv);
+    device_t *device = device_init(&args);
     
     if (device_start(device) != ROM_LOAD_SUCCESS) {
         return EXIT_FAILURE;

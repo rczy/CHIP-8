@@ -1,11 +1,10 @@
 #ifndef DEVICE_H
 #define DEVICE_H
 
+#include "args.h"
 #include "chip8.h"
 #include "display.h"
 #include "beeper.h"
-
-#define DEFAULT_IPF 9
 
 typedef struct device_t {
     // CHIP-8 interpreter
@@ -28,7 +27,7 @@ typedef struct device_t {
     uint8_t running;
 } device_t;
 
-device_t *device_init(char *rom_path, uint16_t ipf);
+device_t *device_init(args_t *args);
 rom_ld_t device_start(device_t *device);
 void device_iterate(device_t *device);
 void device_destroy(device_t **device);

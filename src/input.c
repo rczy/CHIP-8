@@ -45,15 +45,15 @@ input_event_t intput_handle(uint8_t *c8_keyboard)
                         break;
                     }
                     case SDLK_BACKSPACE: {
-                        input_event = IE_RESTART;
+                        input_event = event.type == SDL_KEYDOWN ? IE_RESTART : IE_NONE;
                         break;
                     }
                     case SDLK_KP_PLUS: {
-                        input_event = IE_INC_ISP;
+                        input_event = event.type == SDL_KEYDOWN ? IE_INC_ISP : IE_NONE;
                         break;
                     }
                     case SDLK_KP_MINUS: {
-                        input_event = IE_DEC_ISP;
+                        input_event = event.type == SDL_KEYDOWN ? IE_DEC_ISP : IE_NONE;
                         break;
                     }
                     default: {

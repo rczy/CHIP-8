@@ -6,7 +6,6 @@
 
 #define SAMPLE_FREQ 44100
 #define SAMPLES 2048
-#define TONE 440
 
 typedef enum beeper_state_t { BEEPING, MUTED } beeper_state_t;
 
@@ -18,7 +17,7 @@ typedef struct beeper_t {
     unsigned int nth_chunk;
 } beeper_t;
 
-beeper_t *beeper_create();
+beeper_t *beeper_create(uint16_t tone);
 void beeper_destroy(beeper_t **beeper);
 void beeper_beep(beeper_t *beeper);
 void beeper_mute(beeper_t *beeper);

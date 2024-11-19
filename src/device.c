@@ -8,15 +8,15 @@
 #include "include/display.h"
 #include "include/beeper.h"
 
-device_t *device_init(char *rom_path, uint16_t ipf)
+device_t *device_init(args_t *args)
 {
     srand(time(NULL));
     device_t *device = malloc(sizeof(device_t));
     device->chip_8 = chip8_create();
-    device->display = display_create("CHIP-8 emulator", SCREEN_WIDTH * 10, SCREEN_HEIGHT * 10);
-    device->beeper = beeper_create();
-    device->rom_path = rom_path;
-    device->ipf = ipf;
+    device->display = display_create("CHIP-8 emulator", SCREEN_WIDTH * 10, SCREEN_HEIGHT * 10, args->bg_color, args->fg_color);
+    device->beeper = beeper_create(args->tone);
+    device->rom_path = args->rom_path;
+    device->ipf = args->ipf;
     device->t1 = device->t60 = SDL_GetTicks();
     device->frames = 0;
     device->running = 1;
