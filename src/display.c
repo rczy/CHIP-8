@@ -49,6 +49,11 @@ void display_render(display_t *display, uint8_t *screen_buffer, int width, int h
     SDL_RenderPresent(display->renderer);
 }
 
+void display_title_set(display_t* display, char* title)
+{
+    SDL_SetWindowTitle(display->window, title);
+}
+
 void display_destroy(display_t **display)
 {
     SDL_DestroyRenderer((*display)->renderer);

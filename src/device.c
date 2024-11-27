@@ -78,9 +78,9 @@ void device_iterate(device_t *device)
     }
 
     if (ticks - device->t1 >= 1000) { // 1 Hz
-        char *title;
-        sprintf(title, "CHIP-8 emulator (%i FPS; %i IPS) - %s", device->frames, device->ipf * device->frames, device->rom_path);
-        SDL_SetWindowTitle(device->display->window, title);
+        char buffer[TITLE_LENGTH];
+        snprintf(buffer, TITLE_LENGTH, "CHIP-8 emulator (%d FPS; %d IPS) - %s", device->frames, device->ipf * device->frames, device->rom_path);
+        display_title_set(device->display, buffer);
         device->t1 = SDL_GetTicks();
         device->frames = 0;
     }

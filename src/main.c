@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include <SDL2/SDL.h>
 #include "include/args.h"
 #include "include/device.h"

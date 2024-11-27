@@ -3,6 +3,8 @@
 
 #include <SDL2/SDL.h>
 
+#define TITLE_LENGTH 256
+
 typedef struct color_t {
     uint8_t R;
     uint8_t G;
@@ -18,6 +20,7 @@ typedef struct display_t {
 
 display_t *display_create(char* title, int width, int height, uint32_t bg_color, uint32_t fg_color);
 void display_render(display_t *display, uint8_t *screen_buffer, int width, int height, int pixel_size);
+void display_title_set(display_t* display, char *title);
 void display_destroy(display_t **display);
 
 #endif
