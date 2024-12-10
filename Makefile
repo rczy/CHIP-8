@@ -41,7 +41,7 @@ windows: bin/windows
 .PHONY: web
 web: bin/web
 	@echo "Building for web:"
-	emcc $(SOURCE_FILES_PATH) -o $</index.html
+	emcc $(SOURCE_FILES_PATH) -s USE_SDL=2 -s INVOKE_RUN=0 -s EXPORTED_RUNTIME_METHODS="['FS', 'callMain']" -o $</index.html --shell-file lib/web-shell.html
 
 .PHONY: serve
 serve: bin/web

@@ -1,3 +1,6 @@
+#ifdef EMSCRIPTEN
+#include <emscripten.h>
+#endif
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
@@ -41,8 +44,12 @@ rom_ld_t device_start(device_t *device)
     return status;
 }
 
-void device_iterate(device_t *device)
-{
+#ifdef __EMSCRIPTEN__
+void device_iterate(void *_device) {
+    device_t *device = _device;
+#else
+void device_iterate(device_t *device) {
+#endif
     int ticks = SDL_GetTicks();
     input_event_t ie = intput_handle(device->chip_8->KEYBOARD);
 
@@ -54,8 +61,9 @@ void device_iterate(device_t *device)
     }
 
     int ms = (device->frames % 3 == 0) ? 16 : 17;
-
+#ifndef __EMSCRIPTEN__
     if (ticks - device->t60 >= ms) { // ~60 Hz
+#endif
         chip8_tick(device->chip_8);
 
         for (int i = 0; i < device->ipf; i++) {
@@ -73,13 +81,15 @@ void device_iterate(device_t *device)
         }
 
         device->frames++;
+#ifndef __EMSCRIPTEN__
         device->t60 = SDL_GetTicks();
         SDL_Delay(10);
     }
+#endif
 
     if (ticks - device->t1 >= 1000) { // 1 Hz
         char buffer[TITLE_LENGTH];
-        snprintf(buffer, TITLE_LENGTH, "CHIP-8 emulator (%d FPS; %d IPS) - %s", device->frames, device->ipf * device->frames, device->rom_path);
+        snprintf(buffer, TITLE_LENGTH, "CHIP-8 Emulator (%d FPS; %d IPS) - %s", device->frames, device->ipf * device->frames, device->rom_path);
         display_title_set(device->display, buffer);
         device->t1 = SDL_GetTicks();
         device->frames = 0;

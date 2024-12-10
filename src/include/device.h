@@ -1,6 +1,9 @@
 #ifndef DEVICE_H
 #define DEVICE_H
 
+#ifdef EMSCRIPTEN
+#include <emscripten.h>
+#endif
 #include "args.h"
 #include "chip8.h"
 #include "display.h"
@@ -29,7 +32,11 @@ typedef struct device_t {
 
 device_t *device_init(args_t *args);
 rom_ld_t device_start(device_t *device);
-void device_iterate(device_t *device);
 void device_destroy(device_t **device);
+#ifdef __EMSCRIPTEN__
+void device_iterate(void *_device);
+#else
+void device_iterate(device_t *device);
+#endif
 
 #endif
