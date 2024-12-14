@@ -1,7 +1,6 @@
 #include "include/beeper.h"
 
 void beeper_callback(void *userdata, uint8_t * stream, int len);
-void beeper_buffer_init(beeper_t *beeper);
 
 beeper_t *beeper_create(uint16_t tone)
 {

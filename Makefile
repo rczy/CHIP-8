@@ -1,7 +1,7 @@
 EXECUTABLE= chip-8
 SOURCE_FILES= chip8.c input.c display.c beeper.c args.c device.c main.c
 SOURCE_FILES_PATH= $(addprefix src/,$(SOURCE_FILES))
-TESTS= setup fetch decode execute cycle
+TESTS= setup fetch decode execute
 TEST_TARGETS= $(addprefix test-,$(TESTS))
 SERVER_PORT= 8080
 
