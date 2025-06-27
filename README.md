@@ -50,7 +50,7 @@ This project uses the [Acutest](https://github.com/mity/acutest) (Another C/C++ 
 
 Use the following Makefile targets to run the tests:
 - **test-all:** runs all tests
-- **test-<file>:** builds and runs a specific test from the 'test' folder
+- **test-`<file>`:** builds and runs a specific test from the 'test' folder
 
 ## Attached ROMs
 - animal-race (Brian Astle, 1977)
