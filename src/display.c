@@ -17,12 +17,12 @@ display_t *display_create(char* title, int width, int height, uint32_t bg_color,
     display->window = window;
     display->renderer = renderer;
     display->bg_color = (color_t) {
-        .R = bg_color >> 10,
+        .R = bg_color >> 16,
         .G = (bg_color & 0x00FF00) >> 8,
         .B = bg_color & 0x0000FF,
     };
     display->fg_color = (color_t) {
-        .R = fg_color >> 10,
+        .R = fg_color >> 16,
         .G = (fg_color & 0x00FF00) >> 8,
         .B = fg_color & 0x0000FF,
     };
